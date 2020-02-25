@@ -1,5 +1,6 @@
 Require Import lang_spec.
 Require Import EvalContexts.
+Require Import TypingContexts.
 
 Definition v_notin_set (x : var) (s : VarSet.t) :=
   VarSet.Empty (VarSet.inter (VarSet.singleton x) s).
@@ -22,6 +23,8 @@ Fixpoint substitute (e : expr) (s : expr) (x : var) : expr :=
   | e1 @ e2 => (substitute e1 s x) @ (substitute e2 s x)
   end.
 
+
+(* TODO I'm sure that I'm not defining free variables (in exprs and configs) correctly *)
 Fixpoint expr_freevars (e : expr) : VarSet.t :=
   match e with
   | evar y => VarSet.singleton y
@@ -30,7 +33,6 @@ Fixpoint expr_freevars (e : expr) : VarSet.t :=
   | e1 @ e2 => VarSet.union (expr_freevars e1) (expr_freevars e2)
   end.
 
-(* TODO I'm not sure that I'm defining configuration free variables correctly *)
 Fixpoint config_freevars (c : config) : VarSet.t :=
   match c with
   | (c1 $$ c2) => VarSet.union (config_freevars c1) (config_freevars c2)
@@ -52,10 +54,6 @@ Inductive expr_stepsto : expr -> expr -> Prop :=
 
 (* Structural Congruence and Relations... *)
 
-(* TODO For cong_newplace_distrib, I use a really roundabout way to specify that
- v is not in the set of freevars. If I could "invert a proposition" (assert that it was empty)
- that would be more readable
- *)
 Inductive structcong : config -> config -> Prop :=
 | cong_conc_commut (c1 c2 : config)
   : structcong (c1 $$ c2) (c2 $$ c1)
@@ -96,4 +94,24 @@ Inductive OperationalStepsTo : config -> config -> Prop :=
 | ost_cell_exch (E : ctx_e) (y : var) (v1 v2 : val)
   : OperationalStepsTo ((SubInE (exch @ y @ v1) E) $$ y c= v2)
                        ((SubInE v2 E) $$ y c= v1)
+.
+
+Inductive expr_has_type : ty_ctx -> expr -> type -> Prop :=
+(* Constants *)
+(* TODO Folding typing of constants into typing of expressions might be suspect *)
+| ty_const_unit (g : ty_ctx) : expr_has_type g unit Unit
+| ty_const_thread (g : ty_ctx) (t : type) : expr_has_type g thread ((t >> t) >> t)
+| ty_const_handle (g : ty_ctx) (t1 t2 : type) : expr_has_type g handle ((t1 >> (t1 >> Unit) >> t2) >> t2)
+| ty_const_cell (g : ty_ctx) (t : type) : expr_has_type g cell (t >> (Ref t))
+| ty_const_exch (g : ty_ctx) (t : type) : expr_has_type g exch ((Ref t) >> t >> t)
+(* General Expressions *)
+| ty_var (g : ty_ctx) (x : var) (t : type) (xfree : v_notin_set x g)
+  : expr_has_type (join_double (judge x t) g xfree) x t
+| ty_lam (g : ty_ctx) (x : var) (e : expr) (t1 t2 : type) (xfree : v_notin_set x g)
+         (_ : expr_has_type (join_double (judge x t1) g xfree) e t2)
+  : expr_has_type g (lam x t1 e) (t1 >> t2)
+| ty_app (g : ty_ctx) (e1 e2 : expr) (t1 t2 : type)
+         (_ : expr_has_type g e1 (t1 >> t2))
+         (_ : expr_has_type g e2 t2)
+  : expr_has_type g (e1 @ e2) t2
 .

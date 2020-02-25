@@ -49,6 +49,9 @@ Inductive config : Type :=
 | usedhandle (y : var)
 .
 
+(* Notation and Coercions *)
+
+Notation "t1 '>>' t2" := (Arrow t1 t2) (at level 90, right associativity).
 Notation "f @ g" := (app f g) (at level 71, left associativity).
 
 Notation "c1 $$ c2" := (conc c1 c2) (at level 93, left associativity).
