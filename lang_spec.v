@@ -5,13 +5,11 @@
 
 
 Set Warnings "-notation-overridden,-parsing".
-From Coq Require Import MSets.
 From Coq Require Import Arith.
 
 (* Defining variables as nats is basically a convenience because the String_as_OT item
    from the OrderedTypeEx module is broken, so using strings is out *)
 Definition var := nat.
-Module VarSet := Make(Nat_as_OT).
 
 Inductive type : Type :=
 | Unit

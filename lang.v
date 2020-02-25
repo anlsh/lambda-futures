@@ -2,9 +2,6 @@ Require Import lang_spec.
 Require Import EvalContexts.
 Require Import TypingContexts.
 
-Definition v_notin_set (x : var) (s : VarSet.t) :=
-  VarSet.Empty (VarSet.inter (VarSet.singleton x) s).
-
 (* TODO There has to be a library function for this somewhere but I can't find it *)
 Fixpoint eq (n m : nat) : bool :=
   match n, m with
