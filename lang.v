@@ -141,3 +141,23 @@ Inductive config_has_type : ty_ctx -> config -> ty_ctx -> Prop :=
                     (y_gfree : disj_vars (VarSet.singleton y) g)
   : config_has_type g (usedhandle y) [judge y (Arrow t Unit)]
 .
+
+Theorem Congruence_Preserves_Typing
+  : forall g g': ty_ctx, forall c1 c2 : config,
+    forall ty_prf : config_has_type g c1 g', forall cong_prf : structcong c1 c2,
+    (config_has_type g c2 g').
+Proof.
+  intros G G'.
+  intros C_Orig C_Final ty_prf cong_prf.
+  destruct cong_prf.
+  + inversion ty_prf.
+
+(* Theorem SubjectReduction : (forall C1 C2 : config, forall G G' : ty_ctx, *)
+(*                             forall C1_Type : config_has_type G C1 G', *)
+(*                             forall C1_cong_C2 : OperationalStepsTo C1 C2, *)
+(*                          config_has_type G C2 G'). *)
+(* Proof. *)
+(*   intros C1 C2. *)
+(*   intros G G'. *)
+(*   intros G_proves_C1_G'. *)
+(*   intros C1_stepsto_C2. *)
