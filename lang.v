@@ -147,26 +147,66 @@ Theorem Congruence_Preserves_Typing
     forall ty_prf : config_has_type g c1 g', forall cong_prf : structcong c1 c2,
     (config_has_type g c2 g').
 Proof.
+
   intros G G'.
   intros C_Orig C_Final ty_prf cong_prf.
   destruct cong_prf.
-  + inversion ty_prf.
-    clear g H H1 H2 c0 c3.
-    pose (disj_symmetry := disj_vars_sym g1 g2).
-    inversion disj_symmetry. clear H1.
-    pose (g2_g1 := H g1_g2).
-    pose (almost_goal := ty_config_par G g2 g1 c2 c1 g_g2 g_g1 g2_g1 p2 p1).
-    pose (needed_eql := ctx_union_sym g1 g2 g1_g2 g2_g1).
-    rewrite <- needed_eql in almost_goal.
+  + inversion ty_prf as [g0 g1 g2 cc0 cc1
+                            disj_01 disj_02 disj_12
+                            prf_c1 prf_c2  is_g0_G
+                            tr1 tr2
+                        | | | | | ].
+    clear tr1 tr2 H is_g0_G.
+    pose (witness := ty_config_par G g2 g1 c2 c1 disj_02 disj_01
+                                   (disj_vars_sym g1 g2 disj_12)
+                                   prf_c2 prf_c1).
+    unfold ctx_union in *.
+    rewrite -> ctxu_sym.
     assumption.
+  + inversion ty_prf as [g0 g1 g2 c0 c4
+                            disj_g01 disj_g02 disj_g12
+                            prf_g2 prf_g1
+                        | | | | |].
+    clear g0 c0 c4 H H0 H1 H2 ty_prf.
+
+    inversion prf_g2 as [ g g2a g2b
+                            c0 c4
+                            disj_g01_2a disj_g01_2b disj_g2a2b
+                            prf_g2b prf_g2a
+                        | | | | |].
+
+    clear g c0 c4 H H0 H1.
+    rename H2 into g2_is_join2a2b.
+    unfold ctx_union in *. rewrite <- g2_is_join2a2b.
+    symmetry in g2_is_join2a2b.
+    rewrite -> g2_is_join2a2b in prf_g1. rewrite -> (ctxu_sym g2a g2b) in prf_g1.
+        rewrite -> ctxu_assoc in prf_g1.
+    rewrite <- (ctxu_assoc) in prf_g2a. rewrite -> (ctxu_sym g1 g2b) in prf_g2a.
+        rewrite -> (ctxu_assoc) in prf_g2a.
+
+    pose (g2_is_join2b2a := g2_is_join2a2b). rewrite -> ctxu_sym in g2_is_join2b2a.
+    pose (disj_g1_2b := ctxu_subset g1 g2 g2b g2a g2_is_join2b2a disj_g12).
+    pose (disj_g0_2b := ctxu_subset G g2 g2b g2a g2_is_join2b2a disj_g02).
+    pose (disj_g_g2b_g1 := mutuallydisjoint_gets G g2b g1 disj_g0_2b disj_g01
+                                                  (disj_vars_sym g1 g2b disj_g1_2b)).
 
 
-(* Theorem SubjectReduction : (forall C1 C2 : config, forall G G' : ty_ctx, *)
-(*                             forall C1_Type : config_has_type G C1 G', *)
-(*                             forall C1_cong_C2 : OperationalStepsTo C1 C2, *)
-(*                          config_has_type G C2 G'). *)
-(* Proof. *)
-(*   intros C1 C2. *)
-(*   intros G G'. *)
-(*   intros G_proves_C1_G'. *)
-(*   intros C1_stepsto_C2. *)
+    pose (disj_g1_2a := ctxu_subset g1 g2 g2a g2b g2_is_join2a2b disj_g12).
+    pose (disj_g0_2a := ctxu_subset G g2 g2a g2b g2_is_join2a2b disj_g02).
+    pose (disj_g_g2b_g2a := mutuallydisjoint_gets G g2b g2a disj_g0_2b disj_g0_2a
+                                                  (disj_vars_sym g2a g2b disj_g2a2b)).
+
+    pose (new_prf' := ty_config_par (ctxu G g2b) g1 g2a c2 c3
+                                   disj_g_g2b_g1 disj_g_g2b_g2a
+                                   disj_g1_2a).
+    unfold ctx_union in new_prf'.
+    pose (new_prf := new_prf' prf_g2a prf_g1). unfold new_prf' in new_prf. clear new_prf'.
+
+    pose (arg1 := (mutuallydisjoint_getsv2 G g1 g2a disj_g01 disj_g0_2a disj_g1_2a)).
+    pose (arg2 := (mutuallydisjoint_gets g1 g2a g2b disj_g1_2a disj_g1_2b disj_g2a2b)).
+    rewrite <- ctxu_assoc in prf_g2b.
+    pose (final_prf := ty_config_par G (ctxu g1 g2a) g2b c1 (c2 $$ c3)
+                                     arg1 disj_g0_2b arg2 prf_g2b new_prf).
+    unfold ctx_union in final_prf.
+    rewrite <- ctxu_assoc in final_prf.
+    exact final_prf.
