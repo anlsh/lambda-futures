@@ -2,6 +2,9 @@ Require Import lang_spec.
 Require Import EvalContexts.
 Require Import TypingContexts.
 
+Require Import List.
+Import ListNotations.
+
 (* TODO There has to be a library function for this somewhere but I can't find it *)
 Fixpoint eq (n m : nat) : bool :=
   match n, m with
@@ -59,7 +62,7 @@ Inductive structcong : config -> config -> Prop :=
 | cong_newplace_commut (c : config) (v1 v2 : var)
   : structcong (v1 ** (v2 ** c)) (v2 ** (v1 ** c))
 | cong_newplace_distrib (c1 c2 : config) (v : var)
-                        (vfree : v_notin_set v (config_freevars c1))
+                        (vfree : disj_vars v (config_freevars c1))
   : structcong ((v ** c1) $$ c2) (v ** (c1 $$ c2))
 .
 
@@ -70,22 +73,22 @@ Inductive OperationalStepsTo : config -> config -> Prop :=
   : OperationalStepsTo (SubInE ((lam lam_bind lam_bind_T lam_body) @ v) E)
                        (SubInE (substitute lam_body v lam_bind) E)
 | ost_newthread (E : ctx_e) (v : val) (y : var)
-                (vfree : v_notin_set y (config_freevars (SubInE v E)))
+                (vfree : disj_vars y (config_freevars (SubInE v E)))
   : OperationalStepsTo (SubInE (thread @ v) E)
                        ((y ** (SubInE y E)) $$ (threadval y (v @ y)))
 | ost_future_deref (EF : ctx_ef) (y : var) (v : val)
   : OperationalStepsTo ((SubInE y EF) $$ (threadval y v))
                        ((SubInE v EF) $$ (threadval y v))
 | ost_handle_new (E : ctx_e) (v : val) (y z : var)
-                 (yfree : v_notin_set y (config_freevars (SubInE v E)))
-                 (zfree : v_notin_set z (config_freevars (SubInE v E)))
+                 (yfree : disj_vars y (config_freevars (SubInE v E)))
+                 (zfree : disj_vars z (config_freevars (SubInE v E)))
   : OperationalStepsTo (SubInE (handle @ v) E)
                        (y ** z ** (SubInE (v @ y @ z) E) $$ (z ~ y))
 | ost_handle_bind (E : ctx_e) (z y : var) (v : val)
   : OperationalStepsTo ((SubInE (z @ v) E) $$ (z ~ y))
                        ((SubInE unit E) $$ (threadval y v) $$ (usedhandle z))
 | ost_cell_new (E : ctx_e) (v : val) (y : var)
-               (yfree : v_notin_set y (config_freevars (SubInE v E)))
+               (yfree : disj_vars y (config_freevars (SubInE v E)))
   : OperationalStepsTo (SubInE (cell @ v) E)
                        (y ** ((SubInE y E) $$ y c= v))
 | ost_cell_exch (E : ctx_e) (y : var) (v1 v2 : val)
@@ -102,13 +105,39 @@ Inductive expr_has_type : ty_ctx -> expr -> type -> Prop :=
 | ty_const_cell (g : ty_ctx) (t : type) : expr_has_type g cell (t >> (Ref t))
 | ty_const_exch (g : ty_ctx) (t : type) : expr_has_type g exch ((Ref t) >> t >> t)
 (* General Expressions *)
-| ty_var (g : ty_ctx) (x : var) (t : type) (xfree : v_notin_set x g)
+| ty_var (g : ty_ctx) (x : var) (t : type) (xfree : disj_vars (VarSet.singleton x) g)
   : expr_has_type (join_double (judge x t) g xfree) x t
-| ty_lam (g : ty_ctx) (x : var) (e : expr) (t1 t2 : type) (xfree : v_notin_set x g)
+| ty_lam (g : ty_ctx) (x : var) (e : expr) (t1 t2 : type)
+         (xfree : disj_vars (VarSet.singleton x) g)
          (_ : expr_has_type (join_double (judge x t1) g xfree) e t2)
   : expr_has_type g (lam x t1 e) (t1 >> t2)
 | ty_app (g : ty_ctx) (e1 e2 : expr) (t1 t2 : type)
          (_ : expr_has_type g e1 (t1 >> t2))
          (_ : expr_has_type g e2 t2)
   : expr_has_type g (e1 @ e2) t2
+.
+
+Inductive config_has_type : ty_ctx -> config -> ty_ctx -> Prop :=
+| ty_config_par (g g1 g2 : ty_ctx) (c1 c2 : config)
+                (g_g1 : disj_vars g g1) (g_g2 : disj_vars g g2) (g1_g2 : disj_vars g1 g2)
+                (p1 : config_has_type (join_double g g1 g_g1) c1 g2)
+                (p2 : config_has_type (join_double g g2 g_g2) c2 g1)
+  : config_has_type g (c1 $$ c2) (join_double g1 g2 g1_g2)
+| ty_config_ref (g : ty_ctx) (x : var) (t : type) (v : val)
+                (disj_prf : disj_vars (VarSet.singleton x) g)
+                (vprf : expr_has_type (join_double (judge x (Ref t)) g disj_prf) v t)
+  : config_has_type g (x c= v) (judge x (Ref t))
+| ty_config_reserveplace (g g': ty_ctx) (c : config) (x : var)
+                         (h : config_has_type g c g')
+  : config_has_type g (x ** c) (restrict_ty_ctx g' x)
+| ty_config_threadval (g : ty_ctx) (x : var) (t : type) (e : expr)
+                      (x_gfree : disj_vars (VarSet.singleton x) g)
+                      (h : expr_has_type (join_double (judge x t) g x_gfree) e t)
+  : config_has_type g (threadval x e) (judge x t)
+| ty_config_handledfut(g : ty_ctx) (x y : var) (t : type)
+                      (x_not_y : ~(x = y))
+  : config_has_type g (handledfut y x) [ (judge x t) ; (judge y (Arrow t Unit))]
+| ty_config_usedfut (g : ty_ctx) (y : var) (t : type)
+                    (y_gfree : disj_vars (VarSet.singleton y) g)
+  : config_has_type g (usedhandle y) [judge y (Arrow t Unit)]
 .

@@ -1,21 +1,11 @@
+(* Imports *)
 Require Import lang_spec.
 From Coq Require Import MSets.
 Require Import List.
 Import ListNotations.
+From Coq Require Import Arith.EqNat.
 
 Module VarSet := Make(Nat_as_OT).
-
-(* Definition v_notin_set (x : var) (s : VarSet.t) := *)
-(*   VarSet.Empty (VarSet.inter (VarSet.singleton x) s). *)
-
-(* Definition v_notin_set (x : var) (s : VarSet.t) := ~(VarSet.In x s). *)
-Fixpoint var_to_varset (v : var) : VarSet.t :=
-  VarSet.singleton v
-.
-
-Coercion var_to_varset : var >-> VarSet.t.
-
-Definition disj_vars (s1 s2 : VarSet.t) := VarSet.Empty (VarSet.inter s1 s2).
 
 Inductive Judgement : Type :=
 | judge (v : var) (t : type)
@@ -23,12 +13,13 @@ Inductive Judgement : Type :=
 
 Definition ty_ctx := (list Judgement).
 
-Inductive Contains_tctx_judgement : ty_ctx -> Judgement -> Prop :=
-| contains_hd (j : Judgement) (g : ty_ctx)
-  : Contains_tctx_judgement (cons j g) j
-| contains_tl (j1 j2 : Judgement) (g : ty_ctx) (_ : Contains_tctx_judgement g j2)
-  : Contains_tctx_judgement (cons j1 g) j2
-.
+Definition disj_vars (s1 s2 : VarSet.t) := VarSet.Empty (VarSet.inter s1 s2).
+
+(* Functions to convert between the different types listed above *)
+
+Fixpoint var_to_varset (v : var) : VarSet.t :=
+  VarSet.singleton v.
+Coercion var_to_varset : var >-> VarSet.t.
 
 Fixpoint bound_variables (g : ty_ctx) : VarSet.t :=
   match g with
@@ -47,11 +38,25 @@ Fixpoint coerce_ctx_join (dj : ctx_join) : ty_ctx :=
   match dj with
   | join_single g => g
   | join_double g1 g2 _ => g1 ++ g2
-  end
-.
+  end.
 Coercion coerce_ctx_join : ctx_join >-> ty_ctx.
 
 Fixpoint coerce_judgement_to_ty_ctx (j : Judgement) : ty_ctx :=
-  cons j nil
-.
+  cons j nil.
 Coercion coerce_judgement_to_ty_ctx : Judgement >-> ty_ctx.
+
+
+Fixpoint eq (n m : nat) : bool :=
+  match n, m with
+  | O, O => true
+  | S n', S m' => eq n' m'
+  | _, _ => false
+  end.
+
+Fixpoint restrict_ty_ctx (g : ty_ctx) (x : var) : ty_ctx :=
+  match g with
+  | nil => nil
+  | cons (judge v t) g' => if (eq x v)
+                           then (restrict_ty_ctx g' x)
+                           else (cons (judge v t) (restrict_ty_ctx g' x))
+  end.
