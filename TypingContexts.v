@@ -29,14 +29,12 @@ Fixpoint bound_variables (g : ty_ctx) : VarSet.t :=
 Coercion bound_variables : ty_ctx >-> VarSet.t.
 
 Inductive ctx_join :=
-| join_single (g : ty_ctx)
 | join_double (g1 g2 : ty_ctx)
               (disjoint_proof : disj_vars g1 g2)
 .
 
 Fixpoint coerce_ctx_join (dj : ctx_join) : ty_ctx :=
   match dj with
-  | join_single g => g
   | join_double g1 g2 _ => g1 ++ g2
   end.
 Coercion coerce_ctx_join : ctx_join >-> ty_ctx.
