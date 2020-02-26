@@ -28,16 +28,31 @@ Fixpoint bound_variables (g : ty_ctx) : VarSet.t :=
   end.
 Coercion bound_variables : ty_ctx >-> VarSet.t.
 
-Inductive ctx_join :=
-| join_double (g1 g2 : ty_ctx)
-              (disjoint_proof : disj_vars g1 g2)
-.
 
-Fixpoint coerce_ctx_join (dj : ctx_join) : ty_ctx :=
-  match dj with
-  | join_double g1 g2 _ => g1 ++ g2
-  end.
-Coercion coerce_ctx_join : ctx_join >-> ty_ctx.
+Theorem disj_vars_sym : forall s1 s2 : VarSet.t, (iff (disj_vars s1 s2) (disj_vars s2 s1)).
+Proof.
+  intros s1 s2. unfold disj_vars.
+
+  assert (inter_sym : VarSet.inter s1 s2 = VarSet.inter s2 s1). {
+    admit.
+   }
+  unfold iff.
+  refine (conj _ _ ).
+  { intros h. rewrite <- inter_sym. assumption. }
+  { intros h. rewrite -> inter_sym. assumption. }
+Admitted.
+
+Definition ctx_union (g1 g2 : ty_ctx) (disjoint_proof : disj_vars g1 g2) : ty_ctx
+  := g1 ++ g2.
+Theorem ctx_union_sym : forall g1 g2 : ty_ctx,
+  (* This theorem is actually false, since contexts are currently backed with lists *)
+    forall p1 : (disj_vars g1 g2), forall p2 : (disj_vars g2 g1),
+    ctx_union g1 g2 p1 = ctx_union g2 g1 p2.
+Proof.
+  intros.
+  unfold ctx_union.
+  admit.
+Admitted.
 
 Fixpoint coerce_judgement_to_ty_ctx (j : Judgement) : ty_ctx :=
   cons j nil.
