@@ -62,7 +62,7 @@ Inductive structcong : config -> config -> Prop :=
 | cong_newplace_commut (c : config) (v1 v2 : var)
   : structcong (v1 ** (v2 ** c)) (v2 ** (v1 ** c))
 | cong_newplace_distrib (c1 c2 : config) (v : var)
-                        (vfree : disj_vars v (config_freevars c1))
+                        (vfree : disj_vars v (config_freevars c2))
   : structcong ((v ** c1) $$ c2) (v ** (c1 $$ c2))
 .
 
@@ -210,3 +210,18 @@ Proof.
     unfold ctx_union in final_prf.
     rewrite <- ctxu_assoc in final_prf.
     exact final_prf.
+  + inversion ty_prf as [ | | g g' c0 x h H H0 | | | ].
+    clear H H0 H1 c0.
+    rewrite <- H2 in *. clear H2.
+    admit.
+  + admit.
+Admitted.
+
+Theorem Subject_Reduction :
+  forall G G' : ty_ctx,
+  forall C1 C2 : config,
+  forall G_C1_G' : config_has_type G C1 G',
+  forall C1_StepsTo_C2 : OperationalStepsTo C1 C2,
+    config_has_type G C2 G'.
+Proof.
+  Admitted.
