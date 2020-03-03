@@ -210,10 +210,19 @@ Proof.
     unfold ctx_union in final_prf.
     rewrite <- ctxu_assoc in final_prf.
     exact final_prf.
-  + inversion ty_prf as [ | | g g' c0 x h H H0 | | | ].
+  + inversion ty_prf as [ | | g gx c0 x ty_prf_v2 H H0 | | | ].
     clear H H0 H1 c0.
     rewrite <- H2 in *. clear H2.
-    admit.
+    inversion ty_prf_v2 as [ | | g2 g' c02 x2 ty_prf_all H2 H02 | | | ].
+    rewrite <- H1 in *.
+    clear H H1 c02 H2 H02 x2 g2 G' g gx x ty_prf.
+
+    pose (ty_prf_v1 := ty_config_reserveplace G g' c v1 ty_prf_all).
+    pose (ty_prf_v1_v2 := ty_config_reserveplace G (g' -- v1) (v1 ** c) v2 ty_prf_v1).
+
+    rewrite -> axiom_restriction_commutative in ty_prf_v1_v2.
+    exact ty_prf_v1_v2.
+
   + admit.
 Admitted.
 

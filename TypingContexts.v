@@ -53,6 +53,13 @@ Fixpoint restrict_ty_ctx (g : ty_ctx) (x : var) : ty_ctx :=
                            else (cons (judge v t) (restrict_ty_ctx g' x))
   end.
 
+Notation "g -- x" := (restrict_ty_ctx g x) (at level 71, left associativity).
+
+Theorem axiom_restriction_commutative :
+  forall g : ty_ctx,
+  forall v1 v2 : var,
+  (g -- v1 -- v2) = (g -- v2 -- v1).
+Proof. Admitted.
 
 (* Set-Theory Theorems: warning a lot of admits are gonna start being applied for
    things that are obviously true.
