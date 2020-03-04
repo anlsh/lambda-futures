@@ -1,9 +1,3 @@
-(* Formalization of the basic language *)
-(* The SLTC formalization is largely based on Caleb's live-coding sessions *)
-(* In lectures 14 and 15 *)
-(* https://softwarefoundations.cis.upenn.edu/plf-current/Stlc.html *)
-
-
 Set Warnings "-notation-overridden,-parsing".
 From Coq Require Import Arith.
 
