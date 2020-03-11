@@ -58,6 +58,40 @@ Proof.
       exact y_gfree.
 Qed.
 
+Theorem typing_describes_declvars :
+  forall g g': ty_ctx,
+  forall c : config,
+  forall ty_prf : config_has_type g c g',
+    (bound_variables g') = (config_declvars c).
+Proof.
+  intros.
+  induction ty_prf.
+  +simpl.
+    rewrite -> (bound_of_union_is_union_of_bound g1 g2 g1_g2).
+    rewrite -> IHty_prf1.
+    rewrite -> IHty_prf2.
+    rewrite -> (axiom_union_sym (config_declvars c2) (config_declvars c1)).
+    reflexivity.
+  + simpl. apply union_with_empty.
+  + simpl. rewrite -> bound_of_restr. rewrite -> IHty_prf. reflexivity.
+  + simpl. apply union_with_empty.
+  + simpl. rewrite -> union_with_empty. rewrite -> axiom_union_sym. reflexivity.
+  + simpl. rewrite -> union_with_empty. reflexivity.
+Qed.
+
+(* Theorem cannot_type_freevars : *)
+(*   forall g g' : ty_ctx, *)
+(*   forall c : config, *)
+(*   forall ty_prf : config_has_type g c g', *)
+(*   forall x : var, *)
+(*   forall x_cfree : VarSet.In x (config_freevars c), *)
+(*   ~(VarSet.In x (bound_variables g')). *)
+(* Proof. *)
+(*   intros. *)
+(*   induction c. *)
+(*   + simpl in x_cfree. *)
+(*     destruct ty_prf. *)
+
 Theorem Congruence_Preserves_Typing
   : forall g g': ty_ctx, forall c1 c2 : config,
     forall ty_prf : config_has_type g c1 g', forall cong_prf : structcong c1 c2,
@@ -142,12 +176,68 @@ Proof.
   + inversion ty_prf as [g0 g1 g2subv c0 c3 disj_01 disj_02x disj_12x prf_g2subv prf_g1 | | | | | ].
     clear H H0 H1 H2 c0 c3 ty_prf G' g0.
     inversion prf_g2subv as [ | | g g2v c x prf_g2v | | | ].
-    (* unfold ctx_union in *. *)
-    (* rewrite <-H2 in *. *)
-    (* clear H H0 H1 H2 g x c g2subv. *)
-    clear H H0 H1 H2 g x c.
-    (* pose (goal := ty_config_reserveplace G (ctx_union g1 g2subv disj_12x) (c1 $$ c2) v). *)
-    (* pose (arg1 := ty_config_par G g1 g2subv c1 c2 disj_01 disj_02x disj_12x). *)
+    clear H H0 H1 g x c.
+
+    assert (if_v_in_g2v : (VarSet.In v g2v) -> config_has_type G (v ** (c1 $$ c2)) (ctx_union g1 g2subv disj_12x)). {
+      intros v_in_g2v.
+      pose (new_disj := config_gammas_disjoint (ctx_union G g1 disj_01) g2v c1 prf_g2v).
+      pose (v_notin_union := in_only_one_of_disjoint (ctx_union G g1 disj_01)
+                                                     g2v v v_in_g2v new_disj).
+      Set Printing Coercions.
+      rewrite -> bound_of_union_is_union_of_bound in v_notin_union.
+      pose (v_notin := notin_union_means_notin_either (bound_variables G) (bound_variables g1)
+                                                      v v_notin_union).
+      destruct v_notin as [v_notin_G v_notin_g1].
+      clear new_disj v_notin_union.
+      pose (newprf_g1_int := prf_g1).
+      symmetry in H2.
+      pose (disj_g02v := disj_notin_means_disj_with_added G g2v g2subv v
+                                                          v_notin_G disj_02x H2).
+      pose (disj_g12v := disj_notin_means_disj_with_added g1 g2v g2subv v
+                                                          v_notin_g1 disj_12x H2).
+      pose (rw_util := (ctx_union_with_restriction G g2v g2subv v v_notin_G H2 disj_02x
+                                                   disj_g02v)).
+      rewrite -> rw_util in newprf_g1_int.
+      pose (new_prf_g1 := config_ty_weakening (ctxu G g2v) g1 c2 v newprf_g1_int).
+
+      pose (new_config_par := ty_config_par G g1 g2v c1 c2 disj_01 disj_g02v disj_g12v
+                                            prf_g2v new_prf_g1).
+      pose (finalprf := ty_config_reserveplace G (ctx_union g1 g2v disj_g12v) (c1 $$ c2) v
+                                               new_config_par).
+      pose (new_disj12x := disj_12x).
+      rewrite -> H2 in new_disj12x.
+      pose (restr_cfgs_same := restriction_from_union_where_notin_one g1 g2v v v_notin_g1
+           disj_g12v new_disj12x).
+      rewrite -> restr_cfgs_same in finalprf.
+      clear restr_cfgs_same rw_util.
+      (* TODO At this point the proof is actually done but for unfolding the definition
+         of g2subv... Unfortunately the way I've set up disjoint proofs is really difficult
+         to work with, so I'm going to leave this for later
+
+         But anyways, I really should be able to just do an "exact finalprf" here
+       *)
+      Admitted.
+    }
+
+    assert (if_v_notin_g2v : ~(VarSet.In v g2v) -> config_has_type (ctxu G g2v) c2 g1). {
+      intros.
+      pose (g2_is_g2subv := restr_of_notin_makes_equal g2v v H).
+
+      rewrite -> H2 in g2_is_g2subv.
+      clear H2.
+      symmetry in g2_is_g2subv.
+      pose (disj_02 := disj_02x). rewrite -> g2_is_g2subv in disj_02.
+      (* rewrite -> g2_is_g2subv in prf_g1. *)
+      pose (thingy := ctx_union_of_eql G g2subv g2v disj_02x disj_02 g2_is_g2subv).
+      rewrite -> thingy in prf_g1.
+      (* pose (new_pconf_prf) *)
+      (* assert (ctx_unions_) *)
+      (* rewrite <- g2_is_g2subv in new_disj. *)
+      (* unfold ctx_union in new_crp2f. *)
+      (* rewrite <- g2_is_g2subv in new_crp2f. *)
+      (* exact new_crp2f. *)
+    }
+
 Admitted.
 
 Theorem Subject_Reduction :

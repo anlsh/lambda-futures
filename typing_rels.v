@@ -51,3 +51,11 @@ Inductive config_has_type : ty_ctx -> config -> ty_ctx -> Prop :=
                     (y_gfree : disj_vars (VarSet.singleton y) g)
   : config_has_type g (usedhandle y) [judge y (Arrow t Unit)]
 .
+
+Theorem config_ty_weakening :
+  forall G G' : ty_ctx,
+  forall C : config,
+  forall x : var,
+  forall prf : config_has_type (G -- x) C G',
+    config_has_type G C G'.
+Proof. Admitted.

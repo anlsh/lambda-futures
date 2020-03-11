@@ -56,3 +56,17 @@ Theorem mdisj_rassoc :
   forall disj_s23 : VarSet.Empty (VarSet.inter s2 s3),
     VarSet.Empty (VarSet.inter s1 (VarSet.union s2 s3)).
 Proof. Admitted.
+
+Theorem notin_union_means_notin_either :
+  forall g1 g2 : VarSet.t,
+  forall v : var,
+  forall v_notin_union : ~(VarSet.In v (VarSet.union g1 g2)),
+    ~(VarSet.In v g1) /\ ~(VarSet.In v g2).
+Proof. Admitted.
+
+Theorem disj_means_disj_with_subset :
+  forall g1 g2 subg2: VarSet.t,
+  forall disj_g12 : (disj_vars g1 g2),
+  forall prf_subsert : VarSet.Subset subg2 g2,
+    (disj_vars g1 subg2).
+Proof. Admitted.

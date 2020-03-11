@@ -37,3 +37,13 @@ Fixpoint config_freevars (c : config) : VarSet.t :=
   | h ~ x => VarSet.union (VarSet.singleton h) (VarSet.singleton x)
   | h ~ used => VarSet.singleton h
   end.
+
+Fixpoint config_declvars (c : config) : VarSet.t :=
+  match c with
+  | c1 $$ c2 => VarSet.union (config_declvars c1) (config_declvars c2)
+  | x ** c => VarSet.diff (config_declvars c) (VarSet.singleton x)
+  | x c= v => VarSet.singleton x
+  | x <- v => VarSet.singleton x
+  | h ~ x => VarSet.union (VarSet.singleton h) (VarSet.singleton x)
+  | h ~ used => VarSet.singleton h
+  end.
