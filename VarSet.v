@@ -4,8 +4,7 @@ Require Import lang_spec.
 Module VarSet := Make(Nat_as_OT).
 Definition disj_vars (s1 s2 : VarSet.t) := VarSet.Empty (VarSet.inter s1 s2).
 
-Fixpoint var_to_varset (v : var) : VarSet.t :=
-  VarSet.singleton v.
+Definition var_to_varset (v : var) := VarSet.singleton v.
 Coercion var_to_varset : var >-> VarSet.t.
 
 Theorem axiom_inter_sym : forall s1 s2 : VarSet.t,
@@ -88,4 +87,10 @@ Proof. Admitted.
 Theorem in_singleton :
   forall x : var,
     VarSet.In x (VarSet.singleton x).
+Proof. Admitted.
+
+Theorem disj_var_singleton_means_notin :
+  forall v : var,
+  forall varset : VarSet.t,
+    ~(VarSet.In v varset) <-> (disj_vars (VarSet.singleton v) varset).
 Proof. Admitted.

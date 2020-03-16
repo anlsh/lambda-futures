@@ -1,6 +1,7 @@
 Require Import lang_spec.
 Require Import lang_ops.
 Require Import lang_rels.
+Require Import logic.
 Require Import typing_rels.
 Require Import EvalContexts.
 Require Import TypingContexts.
@@ -267,6 +268,17 @@ Proof.
     inversion prf_g2v as [ | | g g2 c x prf_g2 | | | ].
     clear H H0 H1 g x c.
 
+    assert (v_notin_g1
+            : ~ (VarSet.In v (bound_variables g1))). {
+        pose (contrap := typed_means_freevar (ctx_union G g2v disj_02v) g1 c2 prf_g1 v).
+        destruct (contrapositive (VarSet.In v g1) (VarSet.In v (config_freevars c2))) as [prop  _].
+        pose (almost := prop contrap).
+        Set Printing Coercions.
+        unfold var_to_varset in vfree.
+        destruct (disj_var_singleton_means_notin v (config_freevars c2)) as [_ notin_fn].
+        exact (almost (notin_fn vfree)).
+    }
+
     assert (if_v_in_g2
             : (VarSet.In v g2)
               -> config_has_type G (v ** (c1 $$ c2)) (ctx_union g1 g2v disj_12v)).
@@ -275,11 +287,10 @@ Proof.
       pose (new_disj := config_gammas_disjoint (ctx_union G g1 disj_01) g2 c1 prf_g2).
       pose (v_notin_union := in_only_one_of_disjoint (ctx_union G g1 disj_01)
                                                      g2 v v_in_g2 new_disj).
-      Set Printing Coercions.
       rewrite -> bound_of_union_is_union_of_bound in v_notin_union.
       pose (v_notin := notin_union_means_notin_either (bound_variables G) (bound_variables g1)
                                                       v v_notin_union).
-      destruct v_notin as [v_notin_G v_notin_g1].
+      destruct v_notin as [v_notin_G _].
       clear new_disj v_notin_union.
       pose (newprf_g1_int := prf_g1).
       symmetry in H2.
@@ -315,8 +326,27 @@ Proof.
             : ~(VarSet.In v g2)
               -> config_has_type G (v ** (c1 $$ c2)) (ctx_union g1 g2v disj_12v)). {
       clear if_v_in_g2.
-      intros v_notin_g2v.
-    }
+      intros v_notin_g2.
+      rewrite <- H2 in *.
+      pose (eq_g2_g2v := restr_of_notin_makes_equal g2 v v_notin_g2).
+      rewrite -> H2 in *. clear H2.
+
+      pose (disj_02 := disj_02v).
+      pose (disj_12 := disj_12v).
+      rewrite <- eq_g2_g2v in disj_02.
+      rewrite <- eq_g2_g2v in disj_12.
+
+      pose (new_prf := ty_config_par G g1 g2 c1 c2 disj_01 disj_02 disj_12 prf_g2).
+      (* TODO The proof is so close to being done: the fact that
+         (v /in g1, v/in g2 -> (ctx_union g1 (g2 --v) disj_12v) = (ctx_union g1 g2 disj_12))
+
+         Along with the fact that (g2 = g2v) applied in the first argument of new_prf.
+
+        Anyways, these complete the proof. However, manipulating the
+        disjointness proofs continues to be a huge source of pain so I'm going
+        to admit it for now :|
+       *)
+      admit.
 
 Admitted.
 
