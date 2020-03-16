@@ -79,18 +79,107 @@ Proof.
   + simpl. rewrite -> union_with_empty. reflexivity.
 Qed.
 
-(* Theorem cannot_type_freevars : *)
-(*   forall g g' : ty_ctx, *)
-(*   forall c : config, *)
-(*   forall ty_prf : config_has_type g c g', *)
-(*   forall x : var, *)
-(*   forall x_cfree : VarSet.In x (config_freevars c), *)
-(*   ~(VarSet.In x (bound_variables g')). *)
-(* Proof. *)
-(*   intros. *)
-(*   induction c. *)
-(*   + simpl in x_cfree. *)
-(*     destruct ty_prf. *)
+Theorem typed_means_freevar :
+  forall g g' : ty_ctx,
+  forall c : config,
+  forall typing_proof : config_has_type g c g',
+  forall v : var,
+  forall v_in_g' : VarSet.In v (bound_variables g'),
+    VarSet.In v (config_freevars c).
+Proof.
+  intros g g' c ty_prf v.
+  generalize dependent g.
+  generalize dependent g'.
+  induction c.
+  + intros.
+    inversion ty_prf as [g0 g1 g2 c0 c3 disj_01 disj_02 disj_12 prf_g2 prf_g1
+                        | | | | | ].
+    rewrite <- H2 in *.
+    clear H H0 H1 H2 c0 c3.
+    simpl.
+    destruct (in_union_means_in_one g1 g2 v disj_12 v_in_g') as [inl | inr].
+    {
+      pose (foo := IHc2 g1 (ctx_union g g2 disj_02) prf_g1 inl).
+      rewrite -> axiom_union_sym.
+      exact (inl_means_in_union v (config_freevars c2) (config_freevars c1) foo).
+    }
+    {
+      pose (foo := IHc1 g2 (ctx_union g g1 disj_01) prf_g2 inr).
+      exact (inl_means_in_union v (config_freevars c1) (config_freevars c2) foo).
+    }
+  + intros.
+    simpl.
+    rename g' into g'x.
+    rename v_in_g' into v_in_g'x.
+    inversion ty_prf as [ | | g0 g' c0 x0 prf_g' | | | ].
+    rewrite <- H2 in *.
+    clear H0 H1 H2 x0 H g0.
+    assert (v_eq_x
+            : (v = x)
+              -> VarSet.In v (VarSet.diff (config_freevars c) (VarSet.singleton x))). {
+      intros v_eq_x.
+      rewrite -> v_eq_x in *.
+      pose (v_notin_g'x := restriction_makes_variable_notin g' x).
+      contradiction.
+    }
+    assert (v_neq_x
+            : ~(v = x)
+              -> VarSet.In v (VarSet.diff (config_freevars c) (VarSet.singleton x))). {
+      clear v_eq_x.
+      intros v_neq_x.
+      destruct (in_restr_ifnot_same v x v_neq_x g') as [a1 _].
+      pose (arg := a1 v_in_g'x).
+      pose (arg2 := IHc g' g prf_g' arg).
+      destruct (in_diff_ifnot_same v x v_neq_x (config_freevars c)) as [f1 _].
+      exact (f1 arg2).
+    }
+    (* TODO: I have A -> goal, ~A -> goal. I just need to figure out how to compose those
+       to get the goal *)
+    admit.
+  + intros. simpl.
+    inversion ty_prf as [ | g0 x0 t val | | | | ].
+    rewrite <- H1 in *.
+    rewrite <- H2 in *.
+    clear H H0 H1 v0 g0 x0 H2 disj_prf vprf ty_prf.
+    pose (v_eq_x := var_in_singletonctx_means_equal v x (Ref t) v_in_g').
+    rewrite -> v_eq_x.
+    exact (inl_means_in_union x (VarSet.singleton x) (expr_freevars val) (in_singleton x)).
+  + intros.
+    simpl.
+    inversion ty_prf as [ | | | g0 x0 t e0 x_gfree _ | | ].
+    rewrite <- H2 in *.
+    clear H H0 H1 H2 g0 x0 e0.
+    pose (v_eq_x := var_in_singletonctx_means_equal v x t v_in_g').
+    rewrite -> v_eq_x.
+    rewrite -> axiom_union_sym.
+    exact (inl_means_in_union x (VarSet.singleton x) (expr_freevars e) (in_singleton x)).
+  + intros. simpl.
+    inversion ty_prf as [| | | | g0 x0 y0 t x_not_y x_gfree y_gfree H0 H1 H2 |].
+    rewrite <- H2 in *.
+    clear H H1 H0 x0 y0 g0 x_gfree y_gfree x_not_y ty_prf H2.
+    destruct (var_in_doubletonctx_means_equal_oneof v x y t (t >> Unit) v_in_g') as [v_eq_x | v_eq_y].
+    {
+      rewrite -> axiom_union_sym. rewrite -> v_eq_x.
+      exact (inl_means_in_union x (VarSet.singleton x) (VarSet.singleton y) (in_singleton x)).
+    }
+    {
+      rewrite -> v_eq_y.
+      exact (inl_means_in_union y (VarSet.singleton y) (VarSet.singleton x) (in_singleton y)).
+    }
+  + intros. simpl.
+    inversion ty_prf as [| | | | | g0 y0 t _].
+    clear H H0 H1 ty_prf.
+    pose (v_eq_y := var_in_singletonctx_means_equal v y (t >> Unit) v_in_g').
+    rewrite -> v_eq_y.
+    exact (in_singleton y).
+Admitted.
+
+Theorem var_in_doubletonctx_means_equal_oneof :
+  forall v v1 v2 : var,
+  forall t1 t2 : type,
+  forall v_in_doubleton : VarSet.In v (bound_variables (ctxu (judge v1 t1) (judge v2 t2))),
+    (v = v1) \/ (v = v2).
+Proof. Admitted.
 
 Theorem Congruence_Preserves_Typing
   : forall g g': ty_ctx, forall c1 c2 : config,
@@ -222,12 +311,11 @@ Proof.
       admit.
     }
 
-    assert (if_v_notin_g2v
-            : ~(VarSet.In v g2v)
-              -> config_has_type G (v ** (c1 $$ c2)) (ctx_union g1 g2subv disj_12x)). {
-      clear if_v_in_g2v.
+    assert (if_v_notin_g2
+            : ~(VarSet.In v g2)
+              -> config_has_type G (v ** (c1 $$ c2)) (ctx_union g1 g2v disj_12v)). {
+      clear if_v_in_g2.
       intros v_notin_g2v.
-      rewrite <- H2 in *.
     }
 
 Admitted.

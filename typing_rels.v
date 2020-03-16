@@ -49,7 +49,7 @@ Inductive config_has_type : ty_ctx -> config -> ty_ctx -> Prop :=
   : config_has_type g (handledfut y x) (ctxu (judge x t) (judge y (Arrow t Unit)))
 | ty_config_usedfut (g : ty_ctx) (y : var) (t : type)
                     (y_gfree : disj_vars (VarSet.singleton y) g)
-  : config_has_type g (usedhandle y) [judge y (Arrow t Unit)]
+  : config_has_type g (usedhandle y) (judge y (Arrow t Unit))
 .
 
 Theorem config_ty_weakening :

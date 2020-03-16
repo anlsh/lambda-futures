@@ -5,6 +5,7 @@ Import ListNotations.
 Require Import List.
 Require Import lang_spec.
 Require Import VarSet.
+Require Import lang_ops.
 
 Inductive Judgement : Type :=
 | judge (v : var) (t : type)
@@ -170,6 +171,14 @@ Theorem not_in_union_means_not_in_either :
     ~(VarSet.In v g1).
 Proof. Admitted.
 
+Theorem in_union_means_in_one :
+  forall g1 g2 : ty_ctx,
+  forall v : var,
+  forall disj_12 : disj_vars g1 g2,
+  forall v_in_union : VarSet.In v (ctx_union g1 g2 disj_12),
+    (VarSet.In v g1) \/ (VarSet.In v g2).
+Proof. Admitted.
+
 Theorem ctx_union_with_restriction :
   forall g1 g2 g2subv: ty_ctx,
   forall v : var,
@@ -187,4 +196,25 @@ Theorem restriction_from_union_where_notin_one :
   forall disj_g12 : disj_vars g1 g2,
   forall disj_g12subv : disj_vars g1 (g2 -- v),
     ((ctx_union g1 g2 disj_g12) -- v) = ctx_union g1 (g2 -- v) disj_g12subv.
+Proof. Admitted.
+
+Theorem in_restr_ifnot_same :
+  forall v x : var,
+  forall v_neq_x : ~(v = x),
+  forall g : ty_ctx,
+    VarSet.In v (g -- x) <-> VarSet.In v g.
+Proof. Admitted.
+
+Theorem var_in_singletonctx_means_equal :
+  forall v x : var,
+  forall t : type,
+  forall v_in_singleton_of_x : VarSet.In v (judge x t),
+    v = x.
+Proof. Admitted.
+
+Theorem var_in_doubletonctx_means_equal_oneof :
+  forall v v1 v2 : var,
+  forall t1 t2 : type,
+  forall v_in_doubleton : VarSet.In v (bound_variables (ctxu (judge v1 t1) (judge v2 t2))),
+    (v = v1) \/ (v = v2).
 Proof. Admitted.

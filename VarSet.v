@@ -70,3 +70,22 @@ Theorem disj_means_disj_with_subset :
   forall prf_subsert : VarSet.Subset subg2 g2,
     (disj_vars g1 subg2).
 Proof. Admitted.
+
+Theorem inl_means_in_union :
+  forall v : var,
+  forall v1 v2 : VarSet.t,
+  forall inl : VarSet.In v v1,
+    VarSet.In v (VarSet.union v1 v2).
+Proof. Admitted.
+
+Theorem in_diff_ifnot_same :
+  forall v x : var,
+  forall v_neq_x : ~(v = x),
+  forall vset : VarSet.t,
+    VarSet.In v vset <-> VarSet.In v (VarSet.diff vset (VarSet.singleton x)).
+Proof. Admitted.
+
+Theorem in_singleton :
+  forall x : var,
+    VarSet.In x (VarSet.singleton x).
+Proof. Admitted.
