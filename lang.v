@@ -173,16 +173,19 @@ Proof.
     rewrite -> restriction_commutative in ty_prf_v1_v2.
     exact ty_prf_v1_v2.
 
-  + inversion ty_prf as [g0 g1 g2subv c0 c3 disj_01 disj_02x disj_12x prf_g2subv prf_g1 | | | | | ].
+  + inversion ty_prf as [g0 g1 g2v c0 c3 disj_01 disj_02v disj_12v prf_g2v prf_g1 | | | | | ].
     clear H H0 H1 H2 c0 c3 ty_prf G' g0.
-    inversion prf_g2subv as [ | | g g2v c x prf_g2v | | | ].
+    inversion prf_g2v as [ | | g g2 c x prf_g2 | | | ].
     clear H H0 H1 g x c.
 
-    assert (if_v_in_g2v : (VarSet.In v g2v) -> config_has_type G (v ** (c1 $$ c2)) (ctx_union g1 g2subv disj_12x)). {
-      intros v_in_g2v.
-      pose (new_disj := config_gammas_disjoint (ctx_union G g1 disj_01) g2v c1 prf_g2v).
+    assert (if_v_in_g2
+            : (VarSet.In v g2)
+              -> config_has_type G (v ** (c1 $$ c2)) (ctx_union g1 g2v disj_12v)).
+    {
+      intros v_in_g2.
+      pose (new_disj := config_gammas_disjoint (ctx_union G g1 disj_01) g2 c1 prf_g2).
       pose (v_notin_union := in_only_one_of_disjoint (ctx_union G g1 disj_01)
-                                                     g2v v v_in_g2v new_disj).
+                                                     g2 v v_in_g2 new_disj).
       Set Printing Coercions.
       rewrite -> bound_of_union_is_union_of_bound in v_notin_union.
       pose (v_notin := notin_union_means_notin_either (bound_variables G) (bound_variables g1)
@@ -191,23 +194,23 @@ Proof.
       clear new_disj v_notin_union.
       pose (newprf_g1_int := prf_g1).
       symmetry in H2.
-      pose (disj_g02v := disj_notin_means_disj_with_added G g2v g2subv v
-                                                          v_notin_G disj_02x H2).
-      pose (disj_g12v := disj_notin_means_disj_with_added g1 g2v g2subv v
-                                                          v_notin_g1 disj_12x H2).
-      pose (rw_util := (ctx_union_with_restriction G g2v g2subv v v_notin_G H2 disj_02x
-                                                   disj_g02v)).
+      pose (disj_02 := disj_notin_means_disj_with_added G g2 g2v v
+                                                         v_notin_G disj_02v H2).
+      pose (disj_12 := disj_notin_means_disj_with_added g1 g2 g2v v
+                                                        v_notin_g1 disj_12v H2).
+      pose (rw_util := (ctx_union_with_restriction G g2 g2v v v_notin_G H2 disj_02v
+                                                   disj_02)).
       rewrite -> rw_util in newprf_g1_int.
-      pose (new_prf_g1 := config_ty_weakening (ctxu G g2v) g1 c2 v newprf_g1_int).
+      pose (new_prf_g1 := config_ty_weakening (ctxu G g2) g1 c2 v newprf_g1_int).
 
-      pose (new_config_par := ty_config_par G g1 g2v c1 c2 disj_01 disj_g02v disj_g12v
-                                            prf_g2v new_prf_g1).
-      pose (finalprf := ty_config_reserveplace G (ctx_union g1 g2v disj_g12v) (c1 $$ c2) v
+      pose (new_config_par := ty_config_par G g1 g2 c1 c2 disj_01 disj_02 disj_12
+                                            prf_g2 new_prf_g1).
+      pose (finalprf := ty_config_reserveplace G (ctx_union g1 g2 disj_12) (c1 $$ c2) v
                                                new_config_par).
-      pose (new_disj12x := disj_12x).
-      rewrite -> H2 in new_disj12x.
-      pose (restr_cfgs_same := restriction_from_union_where_notin_one g1 g2v v v_notin_g1
-           disj_g12v new_disj12x).
+      pose (new_disj12v := disj_12v).
+      rewrite -> H2 in new_disj12v.
+      pose (restr_cfgs_same := restriction_from_union_where_notin_one g1 g2 v v_notin_g1
+                                                                      disj_12 new_disj12v).
       rewrite -> restr_cfgs_same in finalprf.
       clear restr_cfgs_same rw_util.
       (* TODO At this point the proof is actually done but for unfolding the definition
@@ -216,26 +219,15 @@ Proof.
 
          But anyways, I really should be able to just do an "exact finalprf" here
        *)
-      Admitted.
+      admit.
     }
 
-    assert (if_v_notin_g2v : ~(VarSet.In v g2v) -> config_has_type (ctxu G g2v) c2 g1). {
-      intros.
-      pose (g2_is_g2subv := restr_of_notin_makes_equal g2v v H).
-
-      rewrite -> H2 in g2_is_g2subv.
-      clear H2.
-      symmetry in g2_is_g2subv.
-      pose (disj_02 := disj_02x). rewrite -> g2_is_g2subv in disj_02.
-      (* rewrite -> g2_is_g2subv in prf_g1. *)
-      pose (thingy := ctx_union_of_eql G g2subv g2v disj_02x disj_02 g2_is_g2subv).
-      rewrite -> thingy in prf_g1.
-      (* pose (new_pconf_prf) *)
-      (* assert (ctx_unions_) *)
-      (* rewrite <- g2_is_g2subv in new_disj. *)
-      (* unfold ctx_union in new_crp2f. *)
-      (* rewrite <- g2_is_g2subv in new_crp2f. *)
-      (* exact new_crp2f. *)
+    assert (if_v_notin_g2v
+            : ~(VarSet.In v g2v)
+              -> config_has_type G (v ** (c1 $$ c2)) (ctx_union g1 g2subv disj_12x)). {
+      clear if_v_in_g2v.
+      intros v_notin_g2v.
+      rewrite <- H2 in *.
     }
 
 Admitted.
